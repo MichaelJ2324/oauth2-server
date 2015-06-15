@@ -37,7 +37,7 @@
 	],
 	"autoload": {
 		"psr-4": {
-			"\\OAuth2\\Server\\": "src/"
+			"OAuth2\\Server\\": "src/"
 		}
 	}
 }
