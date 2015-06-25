@@ -7,6 +7,7 @@
 namespace OAuth2\Server\Grant;
 
 use OAuth2\Server\AuthorizationServer;
+use OAuth2\Server\Entity\ClientEntity;
 
 /**
  * Grant type interface
@@ -48,7 +49,9 @@ interface GrantTypeInterface
     /**
      * Complete the grant flow
      *
+	 * @param \OAuth2\Server\Entity\ClientEntity $client The validated Client Entity
+	 *
      * @return array
      */
-    public function completeFlow();
+    public function completeFlow(ClientEntity $client);
 }

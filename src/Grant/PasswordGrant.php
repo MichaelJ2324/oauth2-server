@@ -81,38 +81,14 @@ class PasswordGrant extends AbstractGrant
      *
      * @throws
      */
-    public function completeFlow()
+    public function completeFlow(ClientEntity $client)
     {
-        // Get the required params
-        $clientId = $this->server->getRequest()->request->get('client_id', $this->server->getRequest()->getUser());
-        if (is_null($clientId)) {
-            throw new Exception\InvalidRequestException('client_id');
-        }
-
-        $clientSecret = $this->server->getRequest()->request->get('client_secret',
-            $this->server->getRequest()->getPassword());
-        if (is_null($clientSecret)) {
-            throw new Exception\InvalidRequestException('client_secret');
-        }
-
-        // Validate client ID and client secret
-        $client = $this->server->getClientStorage()->get(
-            $clientId,
-            $clientSecret,
-            null,
-            $this->getIdentifier()
-        );
-
-        if (($client instanceof ClientEntity) === false) {
-            throw new Exception\InvalidClientException();
-        }
-
-        $username = $this->server->getRequest()->request->get('username', null);
+        $username = $this->server->getRequestHandler()->getParam('username');
         if (is_null($username)) {
             throw new Exception\InvalidRequestException('username');
         }
 
-        $password = $this->server->getRequest()->request->get('password', null);
+        $password = $this->server->getRequestHandler()->getParam('password');
         if (is_null($password)) {
             throw new Exception\InvalidRequestException('password');
         }
@@ -125,7 +101,7 @@ class PasswordGrant extends AbstractGrant
         }
 
         // Validate any scopes that are in the request
-        $scopeParam = $this->server->getRequest()->request->get('scope', '');
+        $scopeParam = $this->server->getRequestHandler()->getParam('scope');
         $scopes = $this->validateScopes($scopeParam, $client);
 
         // Create a new session

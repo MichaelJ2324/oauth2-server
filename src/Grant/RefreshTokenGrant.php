@@ -81,32 +81,9 @@ class RefreshTokenGrant extends AbstractGrant
     /**
      * {@inheritdoc}
      */
-    public function completeFlow()
+    public function completeFlow(ClientEntity $client)
     {
-        $clientId = $this->server->getRequest()->request->get('client_id', $this->server->getRequest()->getUser());
-        if (is_null($clientId)) {
-            throw new Exception\InvalidRequestException('client_id');
-        }
-
-        $clientSecret = $this->server->getRequest()->request->get('client_secret',
-            $this->server->getRequest()->getPassword());
-        if (is_null($clientSecret)) {
-            throw new Exception\InvalidRequestException('client_secret');
-        }
-
-        // Validate client ID and client secret
-        $client = $this->server->getClientStorage()->get(
-            $clientId,
-            $clientSecret,
-            null,
-            $this->getIdentifier()
-        );
-
-        if (($client instanceof ClientEntity) === false) {
-            throw new Exception\InvalidClientException();
-        }
-
-        $oldRefreshTokenParam = $this->server->getRequest()->request->get('refresh_token', null);
+        $oldRefreshTokenParam = $this->server->getRequestHandler()->getParam('refresh_token');
         if ($oldRefreshTokenParam === null) {
             throw new Exception\InvalidRequestException('refresh_token');
         }
@@ -130,7 +107,7 @@ class RefreshTokenGrant extends AbstractGrant
         $scopes = $this->formatScopes($session->getScopes());
 
         // Get and validate any requested scopes
-        $requestedScopesString = $this->server->getRequest()->request->get('scope', '');
+        $requestedScopesString = $this->server->getRequestHandler()->getParam('scope');
         $requestedScopes = $this->validateScopes($requestedScopesString, $client);
 
         // If no new scopes are requested then give the access token the original session scopes

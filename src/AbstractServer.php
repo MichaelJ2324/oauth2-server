@@ -6,6 +6,7 @@
 
 namespace OAuth2\Server;
 
+use OAuth2\Server\Request\HandlerInterface as RequestHandler;
 use OAuth2\Server\Storage\AccessTokenInterface;
 use OAuth2\Server\Storage\AuthCodeInterface;
 use OAuth2\Server\Storage\ClientInterface;
@@ -14,7 +15,7 @@ use OAuth2\Server\Storage\RefreshTokenInterface;
 use OAuth2\Server\Storage\ScopeInterface;
 use OAuth2\Server\Storage\SessionInterface;
 use OAuth2\Server\TokenType\TokenTypeInterface;
-use Symfony\Component\HttpFoundation\Request;
+use OAuth2\Server\TokenType\Bearer;
 
 /**
  * OAuth 2.0 Resource Server
@@ -24,9 +25,9 @@ abstract class AbstractServer
     /**
      * The request object
      *
-     * @var \Symfony\Component\HttpFoundation\Request
+     * @var \OAuth2\Server\Request\HandlerInterface
      */
-    protected $request;
+    protected $requestHandler;
 
     /**
      * Session storage
@@ -84,39 +85,45 @@ abstract class AbstractServer
 
     /**
      * Abstract server constructor
+	 *
+	 * @param \OAuth2\Server\Request\HandlerInterface
+	 *
+	 * @return self
      */
-    public function __construct()
+    public function __construct(RequestHandler $requestHandler)
     {
+		// Set Bearer as the default token type
+		$this->setTokenType(new Bearer());
 
+		$this->setRequestHandler($requestHandler);
+
+		return $this;
     }
 
     /**
      * Sets the Request Object
      *
-     * @param \Symfony\Component\HttpFoundation\Request The Request Object
+     * @param \OAuth2\Server\Request\HandlerInterface The RequestHandler Object
      *
      * @return self
      */
-    public function setRequest($request)
+    public function setRequestHandler(RequestHandler $requestHandler)
     {
-        $this->request = $request;
+        $this->requestHandler = $requestHandler;
 
         return $this;
     }
-
-    /**
-     * Gets the Request object. It will create one from the globals if one is not set.
-     *
-     * @return \Symfony\Component\HttpFoundation\Request
-     */
-    public function getRequest()
-    {
-        if ($this->request === null) {
-            $this->request = Request::createFromGlobals();
-        }
-
-        return $this->request;
-    }
+	/**
+	 * Gets the Request Object
+	 *
+	 * @param \OAuth2\Server\Request\HandlerInterface The RequestHandler Object
+	 *
+	 * @return self
+	 */
+	public function getRequestHandler()
+	{
+		return $this->requestHandler;
+	}
 
     /**
      * Set the client storage

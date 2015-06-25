@@ -6,7 +6,7 @@
 
 namespace OAuth2\Server\TokenType;
 
-use Symfony\Component\HttpFoundation\Request;
+use OAuth2\Server\Request\HandlerInterface as RequestHandler;
 
 class Bearer extends AbstractTokenType implements TokenTypeInterface
 {
@@ -31,9 +31,9 @@ class Bearer extends AbstractTokenType implements TokenTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function determineAccessTokenInHeader(Request $request)
+    public function determineAccessTokenInHeader(RequestHandler $requestHandler, $authHeader = 'Authorization')
     {
-        $header = $request->headers->get('Authorization');
+        $header = $requestHandler->getHeader($authHeader);
         $accessToken = trim(preg_replace('/^(?:\s+)?Bearer\s/', '', $header));
 
         return ($accessToken === 'Bearer') ? '' : $accessToken;

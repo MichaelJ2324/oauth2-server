@@ -7,7 +7,7 @@
 namespace OAuth2\Server;
 
 use OAuth2\Server\Grant\GrantTypeInterface;
-use OAuth2\Server\TokenType\Bearer;
+
 
 /**
  * OAuth 2.0 authorization server class
@@ -20,7 +20,7 @@ class AuthorizationServer extends AbstractServer
      *
      * @var string
      */
-    protected $scopeDelimiter = ' ';
+    protected $scopeDelimiter = ',';
 
     /**
      * The TTL (time to live) of an access token in seconds (default: 3600)
@@ -63,21 +63,6 @@ class AuthorizationServer extends AbstractServer
      * @var boolean
      */
     protected $requireStateParam = false;
-
-    /**
-     * Create a new OAuth2 authorization server
-     *
-     * @return self
-     */
-    public function __construct()
-    {
-        // Set Bearer as the default token type
-        $this->setTokenType(new Bearer());
-
-        parent::__construct();
-
-        return $this;
-    }
 
     /**
      * Enable support for a grant
@@ -256,7 +241,7 @@ class AuthorizationServer extends AbstractServer
      */
     public function issueAccessToken()
     {
-        $grantType = $this->getRequest()->request->get('grant_type');
+        $grantType = $this->requestHandler->getParam('grant_type');
         if (is_null($grantType)) {
             throw new Exception\InvalidRequestException('grant_type');
         }
@@ -267,7 +252,7 @@ class AuthorizationServer extends AbstractServer
         }
 
         // Complete the flow
-        return $this->getGrantType($grantType)->completeFlow();
+        return $this->getGrantType($grantType)->grant();
     }
 
     /**

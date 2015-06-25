@@ -115,6 +115,44 @@ abstract class AbstractGrant implements GrantTypeInterface
         return $this;
     }
 
+	public function grant(){
+		$client = $this->validateClient();
+		return $this->completeFlow($client);
+	}
+
+	public function validateClient(){
+		$clientId = $this->server->getRequestHandler()->getParam('client_id');
+		if (is_null($clientId)) {
+			throw new Exception\InvalidRequestException('client_id');
+		}
+
+		$clientSecret = $this->server->getRequestHandler()->getParam('client_secret');
+		if (is_null($clientSecret)) {
+			throw new Exception\InvalidRequestException('client_secret');
+		}
+
+		$redirectUri = $this->server->getRequestHandler()->getParam('redirect_uri');
+		$uriRequired = false;
+		if (strpos(get_class($this),"AuthCodeGrant") !== FALSE) $uriRequired = true;
+		if (is_null($redirectUri) && $uriRequired) {
+			throw new Exception\InvalidRequestException('redirect_uri');
+		}
+
+		// Validate client ID and client secret
+		$client = $this->server->getClientStorage()->get(
+			$clientId,
+			$clientSecret,
+			$redirectUri,
+			$this->getIdentifier()
+		);
+
+		if (($client instanceof ClientEntity) === false) {
+			throw new Exception\InvalidClientException();
+		}
+
+		return $client;
+	}
+
     /**
      * Given a list of scopes, validate them and return an array of Scope entities
      *

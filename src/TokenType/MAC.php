@@ -7,9 +7,7 @@
 namespace OAuth2\Server\TokenType;
 
 use OAuth2\Server\Util\SecureKey;
-use Symfony\Component\HttpFoundation\ParameterBag;
-use Symfony\Component\HttpFoundation\Request;
-
+use OAuth2\Server\Request\HandlerInterface as RequestHandler;
 /**
  * MAC Token Type
  */
@@ -37,13 +35,13 @@ class MAC extends AbstractTokenType implements TokenTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function determineAccessTokenInHeader(Request $request)
+    public function determineAccessTokenInHeader(RequestHandler $requestHandler,$authHeader = 'Authorization')
     {
-        if ($request->headers->has('Authorization') === false) {
-            return;
-        }
+        $header = $requestHandler->getHeader($authHeader);
 
-        $header = $request->headers->get('Authorization');
+		if ($header === null){
+			return;
+		}
 
         if (substr($header, 0, 4) !== 'MAC ') {
             return;
@@ -51,7 +49,7 @@ class MAC extends AbstractTokenType implements TokenTypeInterface
 
         // Find all the parameters expressed in the header
         $paramsRaw = explode(',', substr($header, 4));
-        $params = new ParameterBag();
+        $params = array();
 
         array_map(function ($param) use (&$params) {
             $param = trim($param);
@@ -71,22 +69,22 @@ class MAC extends AbstractTokenType implements TokenTypeInterface
                 return;
             }
 
-            $params->set($key, $value);
+            $params[$key] = $value;
         }, $paramsRaw);
 
         // Validate parameters
-        if ($params->has('id') === false || $params->has('ts') === false || $params->has('nonce') === false || $params->has('mac') === false) {
+        if (array_key_exists('id',$params) === false || array_key_exists('ts',$params) === false || array_key_exists('nonce',$params) === false || array_key_exists('mac',$params) === false) {
             return;
         }
 
-        if ((int) $params->get('ts') !== time()) {
+        if ((int) $params['ts'] !== time()) {
             return;
         }
 
-        $accessToken = $params->get('id');
-        $timestamp = (int) $params->get('ts');
-        $nonce = $params->get('nonce');
-        $signature = $params->get('mac');
+        $accessToken = $params['id'];
+        $timestamp = (int) $params['ts'];
+        $nonce = $params['nonce'];
+        $signature = $params['mac'];
 
         // Try to find the MAC key for the access token
         $macKey = $this->server->getMacStorage()->getByAccessToken($accessToken);
@@ -99,14 +97,14 @@ class MAC extends AbstractTokenType implements TokenTypeInterface
         $calculatedSignatureParts = [
             $timestamp,
             $nonce,
-            strtoupper($request->getMethod()),
-            $request->getUri(),
-            $request->getHost(),
-            $request->getPort(),
+            strtoupper($requestHandler->getMethod()),
+            $requestHandler->getUri(),
+			$requestHandler->getHost(),
+			$requestHandler->getPort(),
         ];
 
-        if ($params->has('ext')) {
-            $calculatedSignatureParts[] = $params->get('ext');
+        if (array_key_exists('ext',$params)) {
+            $calculatedSignatureParts[] = $params['ext'];
         }
 
         $calculatedSignature = base64_encode(hash_hmac('sha256', implode("\n", $calculatedSignatureParts), $macKey));

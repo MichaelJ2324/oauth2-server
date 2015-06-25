@@ -14,6 +14,7 @@ use OAuth2\Server\Storage\ClientInterface;
 use OAuth2\Server\Storage\ScopeInterface;
 use OAuth2\Server\Storage\SessionInterface;
 use OAuth2\Server\TokenType\Bearer;
+use OAuth2\Server\Request\HandlerInterface;
 
 /**
  * OAuth 2.0 Resource Server
@@ -34,9 +35,17 @@ class ResourceServer extends AbstractServer
      */
     protected $tokenKey = 'access_token';
 
+	/**
+	 * The Header key which is used by clients to present the access token (default: Authorization)
+	 *
+	 * @var string
+	 */
+	protected $authHeader = 'Authorization';
+
     /**
      * Initialise the resource server
      *
+	 * @param \OAuth2\Server\Request\HandlerInterface     $requestHandler
      * @param \OAuth2\Server\Storage\SessionInterface     $sessionStorage
      * @param \OAuth2\Server\Storage\AccessTokenInterface $accessTokenStorage
      * @param \OAuth2\Server\Storage\ClientInterface      $clientStorage
@@ -45,6 +54,7 @@ class ResourceServer extends AbstractServer
      * @return self
      */
     public function __construct(
+		HandlerInterface $requestHandler,
         SessionInterface $sessionStorage,
         AccessTokenInterface $accessTokenStorage,
         ClientInterface $clientStorage,
@@ -55,10 +65,7 @@ class ResourceServer extends AbstractServer
         $this->setClientStorage($clientStorage);
         $this->setScopeStorage($scopeStorage);
 
-        // Set Bearer as the default token type
-        $this->setTokenType(new Bearer());
-
-        parent::__construct();
+        parent::__construct($requestHandler);
 
         return $this;
     }
@@ -76,6 +83,19 @@ class ResourceServer extends AbstractServer
 
         return $this;
     }
+	/**
+	 * Sets the Auth Header key for which access token will be passed.
+	 *
+	 * @param string $authHeader The new authHeader string key
+	 *
+	 * @return self
+	 */
+	public function setAuthHeader($authHeader)
+	{
+		$this->authHeader = $authHeader;
+
+		return $this;
+	}
 
     /**
      * Gets the access token
@@ -130,15 +150,23 @@ class ResourceServer extends AbstractServer
      *
      * @return string
      */
-    public function determineAccessToken($headerOnly = false)
+    public function determineAccessToken($headerOnly = FALSE)
     {
-        if ($this->getRequest()->headers->get('Authorization') !== null) {
-            $accessToken = $this->getTokenType()->determineAccessTokenInHeader($this->getRequest());
-        } elseif ($headerOnly === false) {
-            $accessToken = ($this->getRequest()->server->get('REQUEST_METHOD') === 'GET')
-                                ? $this->getRequest()->query->get($this->tokenKey)
-                                : $this->getRequest()->request->get($this->tokenKey);
-        }
+		switch ($headerOnly){
+			case FALSE:
+				$accessToken = $this->requestHandler->getParam($this->tokenKey);
+				if ($accessToken !== null){
+					break;
+				}
+			case TRUE:
+				$tokenType = $this->getTokenType();
+				if (strrpos(get_class($tokenType),"Bearer") !== FALSE){
+					$accessToken = $tokenType->determineAccessTokenInHeader($this->requestHandler,$this->authHeader);
+				}else{
+					$accessToken = $tokenType->determineAccessTokenInHeader($this->requestHandler);
+				}
+				break;
+		}
 
         if (empty($accessToken)) {
             throw new InvalidRequestException('access token');

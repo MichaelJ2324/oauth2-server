@@ -8,7 +8,7 @@ namespace OAuth2\Server\TokenType;
 
 use OAuth2\Server\AbstractServer;
 use OAuth2\Server\Entity\SessionEntity;
-use Symfony\Component\HttpFoundation\Request;
+use OAuth2\Server\Request\HandlerInterface as RequestHandler;
 
 interface TokenTypeInterface
 {
@@ -55,9 +55,10 @@ interface TokenTypeInterface
     /**
      * Determine the access token in the authorization header
      *
-     * @param \Symfony\Component\HttpFoundation\Request $request
-     *
+     * @param \OAuth2\Server\Request\HandlerInterface
+     * @param String
+	 *
      * @return string
      */
-    public function determineAccessTokenInHeader(Request $request);
+    public function determineAccessTokenInHeader(RequestHandler $requestHandler, $authHeader = 'Authorization');
 }

@@ -11,7 +11,6 @@ use OAuth2\Server\Entity\AuthCodeEntity;
 use OAuth2\Server\Entity\ClientEntity;
 use OAuth2\Server\Entity\RefreshTokenEntity;
 use OAuth2\Server\Entity\SessionEntity;
-use OAuth2\Server\Event;
 use OAuth2\Server\Exception;
 use OAuth2\Server\Util\SecureKey;
 
@@ -77,12 +76,12 @@ class AuthCodeGrant extends AbstractGrant
     public function checkAuthorizeParams()
     {
         // Get required params
-        $clientId = $this->server->getRequest()->query->get('client_id', null);
+        $clientId = $this->server->getRequestHandler()->getParam('client_id');
         if (is_null($clientId)) {
             throw new Exception\InvalidRequestException('client_id');
         }
 
-        $redirectUri = $this->server->getRequest()->query->get('redirect_uri', null);
+        $redirectUri = $this->server->getRequestHandler()->getParam('redirect_uri');
         if (is_null($redirectUri)) {
             throw new Exception\InvalidRequestException('redirect_uri');
         }
@@ -99,12 +98,12 @@ class AuthCodeGrant extends AbstractGrant
             throw new Exception\InvalidClientException();
         }
 
-        $state = $this->server->getRequest()->query->get('state', null);
+        $state = $this->server->getRequestHandler()->getParam('state');
         if ($this->server->stateParamRequired() === true && is_null($state)) {
             throw new Exception\InvalidRequestException('state', $redirectUri);
         }
 
-        $responseType = $this->server->getRequest()->query->get('response_type', null);
+        $responseType = $this->server->getRequestHandler()->getParam('response_type');
         if (is_null($responseType)) {
             throw new Exception\InvalidRequestException('response_type', $redirectUri);
         }
@@ -115,16 +114,16 @@ class AuthCodeGrant extends AbstractGrant
         }
 
         // Validate any scopes that are in the request
-        $scopeParam = $this->server->getRequest()->query->get('scope', '');
+        $scopeParam = $this->server->getRequestHandler()->getParam('scope');
         $scopes = $this->validateScopes($scopeParam, $client, $redirectUri);
 
-        return [
+        return array(
             'client'        => $client,
             'redirect_uri'  => $redirectUri,
             'state'         => $state,
             'response_type' => $responseType,
             'scopes'        => $scopes
-        ];
+		);
     }
 
     /**
@@ -168,39 +167,10 @@ class AuthCodeGrant extends AbstractGrant
      *
      * @throws
      */
-    public function completeFlow()
+    public function completeFlow(ClientEntity $client)
     {
-        // Get the required params
-        $clientId = $this->server->getRequest()->request->get('client_id', $this->server->getRequest()->getUser());
-        if (is_null($clientId)) {
-            throw new Exception\InvalidRequestException('client_id');
-        }
-
-        $clientSecret = $this->server->getRequest()->request->get('client_secret',
-            $this->server->getRequest()->getPassword());
-        if (is_null($clientSecret)) {
-            throw new Exception\InvalidRequestException('client_secret');
-        }
-
-        $redirectUri = $this->server->getRequest()->request->get('redirect_uri', null);
-        if (is_null($redirectUri)) {
-            throw new Exception\InvalidRequestException('redirect_uri');
-        }
-
-        // Validate client ID and client secret
-        $client = $this->server->getClientStorage()->get(
-            $clientId,
-            $clientSecret,
-            $redirectUri,
-            $this->getIdentifier()
-        );
-
-        if (($client instanceof ClientEntity) === false) {
-            throw new Exception\InvalidClientException();
-        }
-
         // Validate the auth code
-        $authCode = $this->server->getRequest()->request->get('code', null);
+        $authCode = $this->server->getRequestHandler()->getParam('code');
         if (is_null($authCode)) {
             throw new Exception\InvalidRequestException('code');
         }
@@ -216,7 +186,7 @@ class AuthCodeGrant extends AbstractGrant
         }
 
         // Check redirect URI presented matches redirect URI originally used in authorize request
-        if ($code->getRedirectUri() !== $redirectUri) {
+        if ($code->getRedirectUri() !== $client->getRedirectUri()) {
             throw new Exception\InvalidRequestException('redirect_uri');
         }
 
