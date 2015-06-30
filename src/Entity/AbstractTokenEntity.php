@@ -49,6 +49,13 @@ abstract class AbstractTokenEntity
      */
     protected $server;
 
+	/**
+	 * Is new Token or Not
+	 *
+	 * @var Boolean
+	 */
+	protected $isNew = true;
+
     /**
      * __construct
      *
@@ -120,8 +127,12 @@ abstract class AbstractTokenEntity
      */
     public function setId($id = null)
     {
-        $this->id = ($id !== null) ? $id : SecureKey::generate();
-
+		if ($id != null){
+			$this->isNew = false;
+			$this->id = $id;
+		}else{
+			$this->id = SecureKey::generate();
+		}
         return $this;
     }
 

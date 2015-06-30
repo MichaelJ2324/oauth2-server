@@ -144,7 +144,7 @@ class AuthCodeGrant extends AbstractGrant
 
         // Create a new auth code
         $authCode = new AuthCodeEntity($this->server);
-        $authCode->setId(SecureKey::generate());
+        $authCode->setId();
         $authCode->setRedirectUri($authParams['redirect_uri']);
         $authCode->setExpireTime(time() + $this->authTokenTTL);
 
@@ -197,7 +197,7 @@ class AuthCodeGrant extends AbstractGrant
 
         // Generate the access token
         $accessToken = new AccessTokenEntity($this->server);
-        $accessToken->setId(SecureKey::generate());
+        $accessToken->setId();
         $accessToken->setExpireTime($this->getAccessTokenTTL() + time());
 
         foreach ($authCodeScopes as $authCodeScope) {
@@ -215,7 +215,7 @@ class AuthCodeGrant extends AbstractGrant
         // Associate a refresh token if set
         if ($this->server->hasGrantType('refresh_token')) {
             $refreshToken = new RefreshTokenEntity($this->server);
-            $refreshToken->setId(SecureKey::generate());
+            $refreshToken->setId();
             $refreshToken->setExpireTime($this->server->getGrantType('refresh_token')->getRefreshTokenTTL() + time());
             $this->server->getTokenType()->setParam('refresh_token', $refreshToken->getId());
         }

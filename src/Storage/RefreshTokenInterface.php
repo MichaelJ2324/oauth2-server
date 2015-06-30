@@ -33,6 +33,15 @@ interface RefreshTokenInterface extends StorageInterface
      */
     public function create($token, $expireTime, $accessToken);
 
+	/**
+	 * Save a refresh token_name
+	 *
+	 * @param \OAuth2\Server\Entity\RefreshTokenEntity $token
+	 *
+	 * @return void
+	 */
+	public function save(RefreshTokenEntity $token);
+
     /**
      * Delete the refresh token
      *
